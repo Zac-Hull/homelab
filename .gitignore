@@ -1,0 +1,10 @@
+.env
+*.env
+**/.env
+**/data/
+**/config/
+**/cache/
+**/secrets/
+*.key
+*.pem
+id_*
