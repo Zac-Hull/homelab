@@ -47,7 +47,7 @@ Focus: networking, containerization, and infrastructure as code
 - Uptime Kuma - service monitoring
 
 ### Roadmap
-See [roadmap.md](docs/roadmap.md) for planned services and future improvements.
+See [roadmap.md](main/roadmap.md) for planned services and future improvements.
 
 ## Tech Stack
 - Proxmox VE
