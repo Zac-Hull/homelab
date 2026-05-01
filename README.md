@@ -1,9 +1,14 @@
 # Homelab Infrastructure
 
 ## Overview
-Self-hosted infrastructure built on Proxmox with a segmented VLAN architecture, designed to simulate real-world environments.
+This homelab is a self-hosted infrastructure environment designed to simulate real-world production systems.
 
-Focus: networking, containerization, and infrastructure as code
+It leverages Proxmox virtualization, VLAN-based network segmentation, and centralized NAS storage to run and manage containerized services in a control environment.
+
+**Focus Areas:**
+- Network segmentation and security
+- Containerized service deployment
+- Infrastructure as Code (Git-based workflow)
 
 ## Architecture
 ```
@@ -28,26 +33,39 @@ Focus: networking, containerization, and infrastructure as code
      |--Access Switch
      `--Wireless Access Points
 ```
+## Design Principles
+- **Segmentation:** VLANs isolate traffic between services, storage, and clients
+- **Separation of Concerns:** Dedicated VMs for Docker and media services
+- **Scalability:** Architecture supports future expansion (Kubernetes, HA, etc.)
+- **Persistence:** Centralized NAS ensures data durability across services
+
 ## Components
-- Proxmox Hypervisor - organization of virtualization
-- Docker VM (docker01) - hosts containerized services using Docker Compose
-- Jellyfin VM (jellyfin01) - dedicated host for media playback services
-- NAS Storage - storage pool for media, documents, and backups for system restoration
+- **Proxmox VE** - hypervisor managing VMs and containers
+- **Docker VM (docker01)** - hosts containerized services via Docker Compose
+- **Jellyfin VM (jellyfin01)** - dedicated media server for streaming workloads
+- **UGOS NAS** - centralized storage for media, backups, and shared data
 
 ## Services
 
 ### Deployed
-- whoami - test service validating container networking and routing
+- **whoami** - test service validating container networking and routing
 
 ### In Progress
-- Jellyfin - media server deployed on dedicated VM
+- **Jellyfin** - media server deployed on dedicated VM
+- **Draw.io** - service to diagram topologies and brainstorm layouts
 
 ### Planned
-- VaultWarden - self-hosted password manager
-- Uptime Kuma - service monitoring
+- **VaultWarden** - self-hosted password manager
+- **Uptime Kuma** - service monitoring
 
 ### Roadmap
 See [roadmap.md](/roadmap.md) for planned services and future improvements.
+
+## Validation
+- Verified SMB access from macOS clients
+- Confirmed inter-VLAN routing between services and storage
+- Tested container networking using `whoami` service
+- Validated persistent storage mounts from NAS to Docker containers
 
 ## Tech Stack
 - Proxmox VE
