@@ -1,0 +1,80 @@
+# Homelab Infrastructure
+
+## Overview
+Self-hosted infrastructure built on Proxmox with a segmented VLAN architecture, designed to simulate real-world production environments.
+
+Focus: networking, containerization, and infrastructure as code
+
+## Components
+- Proxmox Hypervisor
+- Docker VM (docker01)
+- Jellyfin VM (jellyfin01)
+- NAS Storage
+
+## Architecture
+```
+  ISP
+   |
+  ONT
+   |
+[Firewall/Router]
+   |
+|--VLAN 1 (Default)
+|--VLAN 10 (Trusted Devices)
+|--VLAN 20 (Servers)
+     |--docker01
+     `--jellyfin01
+|--VLAN 30 (IoT)
+|--VLAN 40 (Storage)
+     `--NAS
+|--VLAN 50 (Guest)
+|--VLAN 60 (Cameras)
+|--VLAN 100 (External Devices)
+|--VLAN 1000 (Management)
+     |--Access Switch
+     `--Wireless Access Points
+```
+## Components
+- Proxmox Hypervisor - organization of virtualization
+- Docker VM (docker01) - hosts containerized services using Docker Compose
+- Jellyfin VM (jellyfin01) - serves media to clients by pulling from NAS
+- NAS Storage - storage of media, documentation, and backups for system restoration
+
+## Services
+
+### Deployed
+- whoami - test service validating container networking and routing
+
+### In Progress
+- Jellyfin - media server deployed on dedicated Ubuntu 26.04 Server VM
+
+### Planned
+- VaultWarden - self-hosted password manager
+- Uptime Kuma - service monitoring
+
+### Roadmap
+See [roadmap.md](docs/roadmap.md) for planned services and future improvements.
+
+## Tech Stack
+- Proxmox VE
+- Ubuntu Server
+- Docker and Docker Compose
+- VLAN-based network segmentation
+- Git and GitHub (IaC)
+
+## Hardware
+- Firewall/Router: Unifi UDM-SE
+- WAP: Unifi U7-Pro
+- NAS: UGreen Nasync DXP4800 Plus
+- Hypervisor Node: Beelink EQR6 Mini PC
+
+## Goals
+- Learn and practice Infrastructure as Code
+- Practice network segmentation and hardening
+- Build self-hosted services securely
+
+## Key Learnings
+- Implimented VLAN segmentation for network isolation
+- Deployed containerized services using Docker Compose
+- Managed Infrastructure as Code using Git
+- Configured SSH-based authentication for secure GitHub access
