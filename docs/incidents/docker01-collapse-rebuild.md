@@ -8,6 +8,20 @@ The purpose of this writeup is to document what happened, what I was attempting 
 
 ---
 
+## Timeline of Events
+
+| Phase | Event |
+|-------|-------|
+| Expansion | `docker01` accumulated additional services |
+| Storage Modification | thinLVM expanded |
+| Failure Trigger | thinLVM reduced after utilization |
+| Containment | Service expansion halted |
+| Protection | Remaining VMs backed up |
+| Rebuild Decision | Chose rebuild over repair |
+| Validation | Docker and networking verified |
+
+---
+
 ## Environment
 
 - **Hypervisor:** Proxmox VE
@@ -41,7 +55,7 @@ The original `docker01` VM became unstable or unusable during service deployment
 
 At the time, the VM was responsible for multiple experimental services and had accumulated configuration changes during early homelab development.
 
-The thinLVM was expanded to allow for more data storage, but the disk was filled completely and overutilized the physical space of the host disk.
+The thinLVM was expanded aggressively and later reduced after the allocated storage had already been consumed.
 
 Without double checking, the thinLVM storage was shrunken back down, causing a data overflow that locked the storage at the host kernel level.
 
@@ -49,9 +63,25 @@ The failure created an opportunity to reassess the environment rather than conti
 
 ---
 
+## Root Cause Analysis
+
+The immediate failure was caused by shrinking thinLVM storage after the allocated space had already been consumed.
+
+This caused the storage instability at the Proxmox host level and rendered the `docker01` VM unreliable.
+
+However, the broader root cause was architectural:
+
+- Excessive responsibilities assigned to a single VM
+- Rapid experimental configuration changes
+- Lack of standardized deployment patterns
+- Limited rollback planning during early development
+- Incomplete operational documentation
+
+---
+
 ## Symptoms
 
-- `docker01` was no longer trusted as a stable service host, predicated by several download and data transfer drops
+- Multiple failed data transfers back to back
 - Service deployment became difficult to validate
 - Configuration state was unclear
 - The VM had become harder to troubleshoot than to rebuild
@@ -62,6 +92,7 @@ The failure created an opportunity to reassess the environment rather than conti
 ## Initial Assessment
 
 The issue appeared isolated to `docker01`.
+- `docker01` was no longer trusted as a stable service host, predicated by several download and data transfer drops
 
 Before rebuilding, the rest fo the Proxmox host and other VMs needed to be protected to avoid turning a singular VM problem into a larger infrastructure issue.
 
@@ -117,6 +148,33 @@ The goal was to keep known-good systems stable while rebuilding only the failed 
 
 ---
 
+## Impact Assessment
+
+### Directly Affected
+- `docker01`
+- Containerized deployment workflows
+
+### Indirectly Affected
+- Planned service deployments
+- Reverse proxy testing
+- Media backend expansion
+
+### Unaffected
+- Proxmox host
+- Jellyfin VM
+- WireGuard gateway VM
+- NAS storage
+
+### Data Loss
+- No permanent data loss confirmed
+
+### Operational Impact
+- Delayed infrastructure expansion
+- Reduced trust in `docker01` stability
+- Increased risk during future deployments
+
+---
+
 ## Rebuild Strategy
 
 The decision was made to rebuild instead of repair.
@@ -169,22 +227,19 @@ Basic setup included:
 Examples:
 ```bash
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y curl ca-certificates gnupg lsb-release```
+sudo apt install -y curl ca-certificates gnupg lsb-release
+```
 
 ---
 
 ### 3. Docker was installed on `mediabe01`
 
-Docker was installed on `mediabe01` with the following commands after the appropriate keys were generated and directories were created:
-```bash
-sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu noble stable" | sudo tee /etc/apt/sources.list.d/docker.list
-sudo apt update
-sudo apt install -y docker-ce docker-ce-cli conainerd.io docker-buildx-plugin docker-compose-plugin```
+Docker Engine and Compose plugings were installed on `mediabe01` after the appropriate keys were generated and directories were created using the official Docker repository.
 
 The user was then added to the Docker group to allow Docker commands without using super user commands.
-```sudo usermod -aG docker $USER```
+```bash
+sudo usermod -aG docker $USER
+```
 
 After this, the session needed to be refreshed for the group membership to apply.
 
@@ -216,6 +271,20 @@ Purpose:
 
 ---
 
+## Post-Rebuild Validation
+
+The rebuilt environment was vailidated through the following checks:
+
+- Docker daemon functionality
+- Container deployment testing
+- GitHub SSH authentication
+- Docker Compose validation
+- SMB storage accessibility
+- Inter-VLAN routing confirmation
+- VM snapshot verification
+
+---
+
 ## Further Segmentation
 
 After the rebuild, services were separated more intentionally.
@@ -223,6 +292,7 @@ After the rebuild, services were separated more intentionally.
 ### Previous Pattern
 
 `docker01` was becoming a general-purpose host for too many unrelated tasks.
+- The name of the VM described a technology in use, not the purpose of the VM.
 
 ### Improved Pattern
 
@@ -245,6 +315,17 @@ The environment moved toward clearer separation of responsibilities:
 - Improved VM role clarity
 - Began documenting the environment in Git
 - Started building `/docs` structure for repeatable operations
+
+---
+
+## Preventative Actions
+
+- Introduced VM role separation
+- Added Git-based infrastructure documentation
+- Established snapshot-before-change workflow standard
+- Reduced single-VM dependency
+- Improved VLAN segmentation
+- Standardized Docker deployment structure
 
 ---
 
