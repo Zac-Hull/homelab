@@ -250,8 +250,10 @@ After this, the session needed to be refreshed for the group membership to apply
 A clean Docker working directory was created.
 
 Example:
-```sudo mkdir -p /opt/docker
-sudo chown -R $USER:$USER /opt/docker```
+```bash
+sudo mkdir -p /opt/docker
+sudo chown -R $USER:$USER /opt/docker
+```
 
 This location became the base of operation for Docker Compose files and service configuration.
 
