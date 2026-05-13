@@ -21,8 +21,10 @@ It leverages Proxmox virtualization, VLAN-based network segmentation, and centra
 |--VLAN 1 (Default)
 |--VLAN 10 (Trusted Devices)
 |--VLAN 20 (Servers)
-     |--docker01 (containers)
-     `--jellyfin01
+     |--mediabe01 (media backend sorting)
+     |--jellyfin01 (media server)
+     |--wg-home-gw (VPS endpoint)
+     `--documentation01
 |--VLAN 30 (IoT)
 |--VLAN 40 (Storage)
      `--NAS
@@ -41,7 +43,7 @@ It leverages Proxmox virtualization, VLAN-based network segmentation, and centra
 
 ## Components
 - **Proxmox VE** - hypervisor managing VMs and containers
-- **Docker VM (docker01)** - hosts containerized services via Docker Compose
+- **Media Backend VM (mediabe01)** - hosts containerized metadata and sorting services via Docker Compose
 - **Jellyfin VM (jellyfin01)** - dedicated media server for streaming workloads
 - **UGOS NAS** - centralized storage for media, backups, and shared data
 
@@ -51,8 +53,9 @@ It leverages Proxmox virtualization, VLAN-based network segmentation, and centra
 - **whoami** - test service validating container networking and routing
 
 ### In Progress
-- **Jellyfin** - media server deployed on dedicated VM
+- **Jellyfin** - media server deployed on dedicated VM (currently works locally, working on reverse proxy for non-local access)
 - **Draw.io** - service to diagram topologies and brainstorm layouts
+- **AWS hosted domain** - static Astro portfolio site, deployed by GitHub Actions to S3, fronted by Cloudfront, Route 53, and ACM
 
 ### Planned
 - **VaultWarden** - self-hosted password manager
