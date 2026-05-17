@@ -63,6 +63,7 @@ It leverages Proxmox virtualization, VLAN-based network segmentation, and centra
 
 ### Roadmap
 See [roadmap.md](/roadmap.md) for planned services and future improvements.
+See [roadmap-standards.md]{/docs/stadards/roadmap-standards.md} for project stages, tags, and domains standards.
 
 ## Validation
 - Verified SMB access from macOS clients
