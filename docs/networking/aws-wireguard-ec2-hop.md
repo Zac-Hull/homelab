@@ -60,7 +60,7 @@ This project was also used as a hands-on exercise in:
                   │
         ┌─────────┴───────────┐
         │ Home Gateway VM    │
-        │ -wg_home_gw        │
+        │ -wg_home_gw        |
         │ - WireGuard Clien   │
         └─────────┬───────────┘
                   │
@@ -78,24 +78,24 @@ This project was also used as a hands-on exercise in:
 
 ## Environment
 ### Cloud Infrastructure
-Component	Details
----
-Cloud Provider	AWS
-Service	EC2
-OS	Ubuntu Server
-VPN Software	WireGuard
-Role	Public relay / VPN endpoint
+| Component | Details |
+|---|---|
+| Cloud Provider | AWS |
+| Service | EC2 |
+| OS | Ubuntu Server |
+| VPN Software | WireGuard |
+| Role | Public relay / VPN endpoint |
 
 ---
 ### Homelab Infrastructure
-Component	Details
----
-Hypervisor	Proxmox VE
-Router	UniFi
-VPN Gateway	Ubuntu VM
-Internal VLANs	Segmented
-DNS	Internal lab DNS
-Services	Jellyfin, Docker workloads, documentation systems
+| Component | Details |
+|---|---|
+| Hypervisor | Proxmox VE |
+| Router | UniFi |
+| VPN Gateway | Ubuntu VM |
+| Internal VLANs | Segmented |
+| DNS | Internal lab DNS |
+| Services | Jellyfin, Docker workloads, documentation systems |
 
 ---
 
@@ -130,10 +130,9 @@ This architecture also creates a foundation for:
 Tunnel Network
 `10.100.0.0/24`
 
-Device	Tunnel IP
----
-EC2 Relay	10.200.0.1
-Home Gateway	10.200.0.2
+Device Tunnel IP
+- EC2 Relay `10.200.0.1`
+- Home Gateway `10.200.0.2`
 
 ---
 
@@ -210,58 +209,59 @@ Type	Protocol	Port	Source
 Custom UDP	UDP	51820	Trusted IPs or 0.0.0.0/0
 
 ## Major Issues Encountered
-1. EC2 Username Confusion
+**1. EC2 Username Confusion**
 
 One of the earliest blockers was authentication into the EC2 instance.
 
 Different AMIs use different default usernames:
 
-Distribution	Username
-Ubuntu	ubuntu
-Amazon Linux	ec2-user
-Debian	admin/debian
+| Distribution | Username |
+|---|---|
+| Ubuntu | ubuntu |
+| Amazon Linux | ec2-user
+| Debian | admin/debian
 
 This caused repeated SSH failures until the correct username was identified.
 
-2. Security Group Misconfiguration
+**2. Security Group Misconfiguration**
 
 Initial WireGuard connectivity failed because UDP port 51820 was not properly exposed in the AWS Security Group.
 
-Symptoms included:
+**Symptoms included:**
 
 - No tunnel handshake
 - No peer communication
 - WireGuard appearing "up" locally
 
-Resolution:
+**Resolution:**
 
 - Add inbound UDP rule for port 51820
 - Verify source ranges
 - Confirm EC2 public IP
 
-3. Management VLAN Isolation
+**3. Management VLAN Isolation**
 
 A major pain point involved accessing Proxmox remotely.
 
-Initially:
+**Initially:**
 
 - Internal services worked
 - Jellyfin was reachable
 - Proxmox management interface was not
 
-Root cause:
+**Root cause:**
 
 The management VLAN firewall policies were intentionally restrictive.
 
 This was actually desirable from a security standpoint, but required explicit inter-VLAN allowances.
 
-Resolution involved:
+**Resolution involved:**
 
 - Adjusting UniFi firewall rules
 - Allowing traffic from WireGuard subnet
 - Verifying routes between VLANs
 
-4. Incorrect Internal Subnet Assumptions
+**4. Incorrect Internal Subnet Assumptions**
 
 There was confusion between:
 
@@ -279,7 +279,7 @@ The actual Proxmox management subnet was:
 
 Correcting the route tables resolved the issue.
 
-5. UniFi Firewall Complexity
+**5. UniFi Firewall Complexity**
 
 UniFi firewall logic introduced additional troubleshooting complexity.
 
@@ -290,11 +290,11 @@ Pain points included:
 - Directional firewall logic
 - GUI terminology confusion
 
-Key lesson:
+**Key lesson:**
 
 Inter-VLAN routing does not automatically imply inter-VLAN firewall permission.
 
-6. Split-Tunnel vs Full-Tunnel Behavior
+**6. Split-Tunnel vs Full-Tunnel Behavior**
 
 Using:
 
