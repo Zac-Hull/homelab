@@ -8,3 +8,4 @@
 *.key
 *.pem
 id_*
+.DS_Store
