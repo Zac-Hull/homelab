@@ -27,15 +27,17 @@ Astro static site files
 
 The site currently uses:
 
-- Astro for static site generation
-- GitHub for source control
-- Amazon S3 for static asset storage
-- CloudFront for global edge delivery
-- CloudFront Origin Access Control for private S3 access
-- CloudFront Functions for clean URL routing
-- AWS Certificate Manager for TLS
-- Route 53 for DNS
-- AWS CLI for the current manual deployment path
+- **Astro** for static site generation
+- **GitHub** for source control
+- **Amazon S3** for static asset storage
+- **CloudFront** for global edge delivery
+- **CloudFront Origin Access Control** for private S3 access
+- **CloudFront Functions** for clean URL routing
+- **AWS Certificate Manager** for TLS
+- **Route 53** for DNS
+- **GitHub Actions** for automated production deployment
+- **AWS OpenID Connect** for short-lived deployment authentication
+- **AWS CLI** as a manual fallback and local administrative tool
 
 ---
 
@@ -65,10 +67,10 @@ The new architecture solves those problems by removing the CMS layer, reducing t
 - Preserve the old Lightsail site temporarily as rollback during cutover.
 - Document the process clearly enough to explain the decisions later.
 ### Long-Term Goals
-- Add GitHub Actions deployment automation.
-- Use AWS OIDC instead of long-lived deployment credentials.
-- Convert the proven AWS infrastructure into Terraform.
+- Convert the proven AWS infrastructure into Terraform-managed infrastructure.
 - Add domain email with proper SPF, DKIM, and DMARC.
+- Add diagrams for the production request path and deployment workflow.
+- Improve deployment observability and rollback documentation.
 - Use the website as a central portfolio for future cloud, operations, and homelab projects.
 
 ---
@@ -87,10 +89,10 @@ This project covered:
 - Updating Route 53 records for the domain cutover
 - Validating public site behavior across multiple devices and networks
 - Preserving rollback through the old Lightsail deployment
+- GitHub Actions deployment automation
 
 This project does *not* yet include:
 
-- GitHub Actions deployment automation
 - Terraform-managed infrastructure
 - Automated rollback
 - Production monitoring
@@ -105,14 +107,17 @@ Those remain planned follow-up phases.
 Exact resource names and IDs are intentionally omitted from this public writeup.
 
 | Resource | Purpose |
-|:---|:---|
+|---|---|
 | S3 bucket | Private static origin for Astro build output |
 | CloudFront distribution | Public CDN and HTTPS delivery layer |
 | CloudFront OAC | Grants CloudFront access to the private S3 bucket |
-| CloudFront Function | Rewrites clean URLs to index.html paths |
-| ACM certificate | Provides TLS for zachull.com and www.zachull.com |
+| CloudFront Function | Rewrites clean URLs to `index.html` paths |
+| ACM certificate | Provides TLS for `zachull.com` and `www.zachull.com` |
 | Route 53 hosted zone | Manages DNS records for the domain |
-| Lightsail instance | Legacy WordPress host retained temporarily for rollback |
+| GitHub Actions workflow | Builds and deploys the Astro site on pushes to `main` |
+| AWS OIDC provider | Allows GitHub Actions to assume an AWS role without long-lived keys |
+| IAM deployment role | Grants scoped deployment access to S3 and CloudFront |
+| Lightsail instance | Legacy WordPress host, now decommissioned |
 
 ---
 
@@ -171,11 +176,10 @@ DNS validation was preferred over email validation because it is cleaner, easier
 
 ### Manual Deployment Before Automation
 
-The first deployment was performed manually with the AWS CLI.
+The first production deployment was performed manually with the AWS CLI.
 
-This was intentional.
+This was intentional. Before automating the deployment path, I wanted to understand and validate the architecture by hand:
 
-Before automating the deployment path, I wanted to understand and validate the architecture by hand:
 ```text
 local build
   ↓
@@ -186,12 +190,31 @@ CloudFront invalidation
 public validation
 ```
 
-Once the manual process works reliably, GitHub Actions can automate the known-good workflow.
+After the manual path was proven, GitHub Actions was added to automate the known-good workflow.
+
+The current production deployment path is now:
+```text
+push to main
+  ↓
+GitHub Actions workflow
+  ↓
+Astro build
+  ↓
+AWS OIDC role assumption
+  ↓
+S3 sync
+  ↓
+CloudFront invalidation
+  ↓
+production validation
+```
+
+This kept the automation grounded in a process that had already been tested manually.
 
 ---
 
 ## Implementation Path
-1. Built the Local Astro Site
+**1. Built the Local Astro Site**
 
 The project started locally with Astro. The first stage focused on building out the actual portfolio content and structure before touching AWS.
 
@@ -209,7 +232,7 @@ The site was built to support content-driven project pages and certification ent
 
 ---
 
-2. Connected the Project to GitHub
+**2. Connected the Project to GitHub**
 
 The local site was connected to a private GitHub repository.
 
@@ -235,7 +258,7 @@ push to GitHub
 
 This phase was not glamorous, but it was important. It turned the project from a local folder into a version-controlled engineering artifact.
 
-3. Validated the Local Build
+**3. Validated the Local Build**
 
 Before deploying anything, the site was built and previewed locally.
 
@@ -257,7 +280,7 @@ resume/
 
 Manual browser testing confirmed that the pages, links, project cards, certification links, and resume PDF all worked locally.
 
-4. Created the S3 Origin Bucket
+**4. Created the S3 Origin Bucket**
 
 A new S3 bucket was created for the static site output.
 
@@ -275,7 +298,7 @@ Static website hosting: disabled
 
 S3 Bucket Key was not enabled because the bucket uses SSE-S3, not SSE-KMS.
 
-5. Uploaded the Astro Build to S3
+**5. Uploaded the Astro Build to S3**
 
 After running:
 ```bash
@@ -307,7 +330,7 @@ resume/
 
 One small mistake during this phase was accidentally uploading a macOS .DS_Store file. That was identified for cleanup and added to the future deployment hygiene checklist.
 
-6. Created the CloudFront Distribution
+**6. Created the CloudFront Distribution**
 
 A CloudFront distribution was created with the S3 bucket as the origin.
 
@@ -323,7 +346,7 @@ Default root object: index.html
 
 The free CloudFront plan was selected because the site is a low-traffic static portfolio and does not need paid WAF-heavy features at launch.
 
-7. Solved Initial AccessDenied Errors
+**7. Solved Initial AccessDenied Errors**
 
 The first CloudFront test returned an S3 XML AccessDenied response.
 
@@ -342,7 +365,7 @@ Instead, the troubleshooting path focused on:
 
 Once the homepage loaded through the CloudFront URL, the OAC/S3 access path was confirmed to be working.
 
-8. Solved Clean URL Routing
+**8. Solved Clean URL Routing**
 
 After the homepage worked, nested routes such as:
 ```text
@@ -396,7 +419,7 @@ This fixed clean route behavior without rewriting files such as PDFs, CSS, JavaS
 
 After this function was deployed, all tested CloudFront paths worked correctly.
 
-9. Requested the ACM Certificate
+**9. Requested the ACM Certificate**
 
 A public ACM certificate was requested for:
 ```text
@@ -413,7 +436,7 @@ Export: disabled
 
 Because the domain is managed in Route 53, DNS validation records were created there and the certificate was issued.
 
-10. Added Custom Domains to CloudFront
+**10. Added Custom Domains to CloudFront****
 
 After the ACM certificate was issued, the CloudFront distribution was updated with alternate domain names:
 ```text
@@ -425,7 +448,7 @@ The ACM certificate was attached to the distribution.
 
 At this stage, CloudFront was ready to serve traffic for the real domain.
 
-11. Updated Route 53
+**11. Updated Route 53**
 
 Route 53 was updated to point the domain to CloudFront.
 
@@ -439,7 +462,7 @@ www.zachull.com  AAAA  Alias → CloudFront
 
 This changed the public domain path from the old Lightsail WordPress site to the new CloudFront distribution.
 
-12. Validated Production Behavior
+**12. Validated Production Behavior**
 
 After cutover, testing showed mixed behavior across devices and networks.
 
@@ -454,6 +477,67 @@ Testing confirmed:
 - CloudFront invalidation did not affect DNS resolver caching.
 
 The old Lightsail instance was kept running temporarily as rollback while DNS resolver caches aged out.
+
+---
+
+## Automated Deployment with GitHub Actions
+
+After the manual deployment path was validated, the next step was to automate production updates through GitHub Actions.
+
+The deployment workflow now runs on pushes to `main`.
+
+The workflow performs the following steps:
+
+```text
+Check out repository
+  ↓
+Set up Node.js
+  ↓
+Install dependencies
+  ↓
+Build Astro site
+  ↓
+Assume AWS IAM role through OIDC
+  ↓
+Sync `dist/` to S3
+  ↓
+Create CloudFront invalidation
+```
+
+GitHub Actions uses AWS OpenID Connect instead of stored AWS access keys. This allows the workflow to request short-lived credentials for a scoped IAM role.
+
+The deployment role is limited to the permissions needed for this site:
+
+- List the site bucket
+- Put, get, and delete objects in the site bucket
+- Create invalidations for the CloudFront distribution
+
+During setup, one issue came from how GitHub repository variables were entered. The variables were initially stored as KEY=value strings instead of value-only entries. This caused malformed AWS CLI commands during the workflow run.
+
+Example of the incorrect pattern:
+```text
+S3_BUCKET=zachull-com-static-site
+```
+
+Correct GitHub Actions variable format:
+```text
+Name:  S3_BUCKET
+Value: zachull-com-static-site
+```
+
+Once the variables were corrected, the workflow completed successfully and the site updated automatically after a push to main.
+
+---
+
+## Decommissioned the Lightsail WordPress Site
+
+After the CloudFront-backed static site and GitHub Actions deployment pipeline were validated, the legacy Lightsail WordPress instance was decommissioned.
+
+The old instance was kept temporarily during DNS propagation and early production validation. This provided a rollback path while confirming that Route 53, CloudFront, S3, ACM, and the deployment pipeline were all working correctly.
+
+Once the static site was validated across multiple networks and the automated deployment pipeline completed successfully, the Lightsail resources were removed to eliminate unnecessary cost and operational overhead.
+
+This completed the migration away from WordPress and left the static AWS architecture as the production path.
 
 ---
 
@@ -518,6 +602,30 @@ Lesson:
 
 >DNS propagation is not only about browser history. Resolver caching can make different networks see different versions of the same domain during cutover.
 
+### GitHub Actions Variables Were Misconfigured
+
+The GitHub Actions workflow initially failed during deployment because repository variables were entered in the wrong format.
+
+I entered values using a shell-style pattern:
+
+```text
+S3_BUCKET = zachull-com-static-site
+```
+
+But GitHub Actions repository variables already separate the variable name from the value. The correct value should contain only the value itself.
+
+Correct pattern:
+```text
+Variable name:  S3_BUCKET
+Variable value: zachull-com-static-site
+```
+
+The same issue affected other variables such as the AWS region and CloudFront distribution ID.
+
+Lesson:
+
+>GitHub Actions variables should store only the value. The variable name belongs in the GitHub variable name field, not inside the variable value.
+
 ---
 
 ## High Points
@@ -561,6 +669,24 @@ This was one of the most valuable shifts in the project.
 Keeping the bucket private preserved the intended security model.
 
 The final public path is CloudFront, not direct S3 access.
+
+### The Deployment Pipeline Became Fully Automated
+
+After the manual deployment path was validated, GitHub Actions was added to build and deploy the site automatically.
+
+The site can now be updated through the normal Git workflow:
+
+```text
+edit content
+  ↓
+commit
+  ↓
+push to main
+  ↓
+GitHub Actions deploys to production
+```
+
+This moved the project from a manually deployed static site to a more complete CI/CD workflow.
 
 ## Low Points
 ### The Project Took Longer Than a Simple Website Should
@@ -636,7 +762,7 @@ Additional testing included:
 
 ## Current State
 
-The project is currently in production cutover.
+The project is now in production and the legacy Lightsail WordPress deployment has been decommissioned.
 
 **Completed:**
 
@@ -650,42 +776,47 @@ The project is currently in production cutover.
 - ACM certificate issued
 - Route 53 alias records updated
 - CloudFront paths validated
-- Custom domain working where DNS has refreshed
+- Custom domain validated
+- GitHub Actions deployment workflow completed
+- AWS OIDC role assumption configured
+- Automated S3 sync and CloudFront invalidation working
+- Legacy Lightsail WordPress resources decommissioned
 
 **Still in progress:**
 
-- Waiting for DNS resolver caches to fully age out
-- Keeping Lightsail temporarily as rollback
-- Cleaning up legacy WordPress/Lightsail resources after validation
-- Automating deployment
-- Converting infrastructure to Terraform
-- Rollback Plan
+- Terraform conversion
+- Architecture diagrams
+- Production monitoring considerations
+- Domain email configuration
+- Additional runbooks for smaller operational workflows
 
-The old Lightsail WordPress site was kept running temporarily after Route 53 was changed.
+**Rollback and Decommission Strategy**
 
-**Rollback strategy:**
+After the new static site and automated deployment pipeline were validated, the legacy Lightsail instance was decommissioned.
 
-1. Keep the old Lightsail deployment available during DNS propagation.
-2. If CloudFront/custom-domain behavior fails broadly, point Route 53 records back to the previous Lightsail target.
-3. Do not delete Lightsail until the new static site works consistently across multiple networks.
-4. Stop Lightsail before deleting it to confirm no live traffic path still depends on it.
+The rollback period is now complete. Future rollback planning should focus on:
 
-This prevents a cache or DNS issue from turning into a self-inflicted outage.
+- Reverting Git changes
+- Re-running the GitHub Actions deployment workflow
+- Restoring previous S3 object versions if needed
+- Using CloudFront invalidations after rollback
+- Documenting Terraform state and recovery once IaC is introduced
 
 ---
 
-## Next Phase: Deployment Automation
+## Completed Phase: Deployment Automation
 
-The current deployment path is manual:
+The original deployment path was manual:
 ```bash
 npm run build
 aws s3 sync dist/ s3://<site-bucket-name> --delete
 aws cloudfront create-invalidation --distribution-id <distribution-id> --paths "/*"
 ```
 
-The next phase is to automate this through GitHub Actions.
+This phase has now been completed through GitHub Actions and AWS OIDC.
 
-Target flow:
+The current deployment path is:
+
 ```text
 Push to main
   ↓
@@ -698,19 +829,15 @@ GitHub authenticates to AWS using OIDC
 dist/ syncs to S3
   ↓
 CloudFront invalidation runs
+  ↓
+zachull.com updates automatically
 ```
 
 Planned automation tasks:
 
-- Create an AWS IAM role for GitHub OIDC
-- Scope permissions to the site bucket and CloudFront distribution
-- Add GitHub Actions workflow
-- Test deployment with a small content change
-- Document the automated deployment path
-- Remove reliance on local manual deploys
 - Future Infrastructure as Code Phase
 
-After the manual and automated deployment paths are stable, the infrastructure should be converted to Terraform.
+Now that the manual and automated deployment paths are stable, the infrastructure should be converted to Terraform.
 
 Potential Terraform-managed resources:
 
@@ -801,6 +928,8 @@ Those are the details that make the project real.
 
 This migration is now a working production cloud project, but it is not finished.
 
-The current system is functional, secure by default, and publicly reachable. The next step is to make the deployment path repeatable through GitHub Actions, then eventually convert the AWS resources into Terraform.
+The current system is functional, secure by default, publicly reachable, and automatically deployed through GitHub Actions.
+
+The next major improvement is converting the manually configured AWS resources into Terraform so the infrastructure can be recreated, reviewed, and evolved as code.
 
 The project is a good example of the kind of infrastructure work I want to keep building: practical, documented, cost-aware, and designed to become more reliable over time.
