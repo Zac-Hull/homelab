@@ -6,6 +6,8 @@ services:
     ports:
       - "9090:9090"
     volumes:
+      - ./prometheus/rules:/etc/prometheus/rules:ro
+      - ./prometheus/targets:/etc/prometheus/targets:ro
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     command:
@@ -54,8 +56,5 @@ services:
       - ./blackbox/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
 
 volumes:
-  - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-  - ./prometheus/rules:/etc/prometheus/rules:ro
-  - ./prometheus/targets:/etc/prometheus/targets:ro
-  - prometheus_data:/prometheus
-  - grafana_data:
+  prometheus_data:
+  grafana_data:
