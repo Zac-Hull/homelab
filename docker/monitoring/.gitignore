@@ -1,0 +1,7 @@
+.env
+*.env
+data/
+volumes/
+*.bak
+*.backup
+*.tmp
