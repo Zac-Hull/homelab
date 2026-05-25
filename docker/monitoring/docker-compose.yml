@@ -54,5 +54,8 @@ services:
       - ./blackbox/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
 
 volumes:
-  prometheus_data:
-  grafana_data:
+  - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+  - ./prometheus/rules:/etc/prometheus/rules:ro
+  - ./prometheus/targets:/etc/prometheus/targets:ro
+  - prometheus_data:/prometheus
+  - grafana_data:
