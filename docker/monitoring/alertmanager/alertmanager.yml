@@ -9,4 +9,7 @@ route:
   repeat_interval: 4h
 
 receivers:
-  - name: "default"
+  - name: "discord"
+    webhook_configs:
+      - url: "http://alertmanager-discord:9094"
+      send_resolved: true
