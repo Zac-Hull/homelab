@@ -1,7 +1,7 @@
 groups:
   - name: homelab-availability
     rules:
-      - alerts: PrometheusTargetDown
+      - alert: PrometheusTargetDown
         expr: up == 0
         for: 2m
         labels:
@@ -11,7 +11,7 @@ groups:
           summary: "Prometheus target is down."
           description: "Target {{ $labels.instance }} for job {{ $labels.job }} has been down for more than 2 minutes."
 
-      - alerts: BlackboxProbeFailed
+      - alert: BlackboxProbeFailed
         expr: probe_success == 0
         for: 2m
         labels:
