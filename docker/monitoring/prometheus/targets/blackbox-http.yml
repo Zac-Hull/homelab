@@ -1,0 +1,18 @@
+- targets:
+    - "https://zachull.com"
+  labels:
+    environment: "production"
+    site: "public"
+    service: "portfolio-site"
+    probe_type: "https"
+    criticality: "high"
+
+- targets:
+    - "http://grafana:3000"
+    - "http://prometheus:9090"
+  labels:
+    environment: "homelab"
+    site: "home"
+    service_group: "monitoring"
+    probe_type: "http"
+    criticality: "high"
