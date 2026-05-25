@@ -432,16 +432,16 @@ Each peer must know:
 
 ---
 
-## Security Improvements Planned
-### Future Improvements
-- MFA-protected access gateway
-- Internal DNS over tunnel
-- ACL-based segmentation
-- Reverse proxy integration
-- Dynamic routing experimentation
-- High availability relay nodes
-- Terraform deployment automation
-- Automated configuration backups
+## Design Tradeoffs
+### Manual WireGuard Relay vs. Tailscale
+
+Tailscale was a valid alternative for this project and would likely be easier to operate for many remote-access use cases. It provides a managed mesh VPN experience with simpler client onboarding, coordination, NAT traversal, identity-aware access patterns, and less manual routing work.
+
+I chose a manual WireGuard relay for this phase because the primary goal was not only remote access, but also learning and documenting the underlying infrastructure mechanics directly: AWS EC2 networking, Linux routing, IP forwarding, firewall behavior, security groups, peer configuration, and remote client access through a controlled relay.
+
+This decision trades convenience for visibility. Tailscale abstracts away much of the complexity, which is valuable in production-like environments. Manual WireGuard exposes that complexity, which made it more useful as a learning project.
+
+For a future iteration, I may revisit Tailscale or Headscale after my identity management stack, access policies, and internal documentation patterns are more mature.
 
 ---
 
@@ -461,6 +461,19 @@ This project reinforced several critical infrastructure concepts:
 - Documentation is critical
 - Small subnet mistakes create major issues
 - Simplicity beats cleverness in networking
+
+---
+
+## Security Improvements Planned
+### Future Improvements
+- MFA-protected access gateway
+- Internal DNS over tunnel
+- ACL-based segmentation
+- Reverse proxy integration
+- Dynamic routing experimentation
+- High availability relay nodes
+- Terraform deployment automation
+- Automated configuration backups
 
 ---
 
