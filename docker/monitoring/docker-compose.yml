@@ -68,6 +68,15 @@ services:
       - "--config.file=/etc/alertmanager/alertmanager.yml"
       - "--storage.path=/alertmanager"
 
+  alertmanager-discord:
+    image: ghcr.io/rogerrun/alertmanager-discord:latest
+    container_name: alertmanager-discord
+    restart: unless-stopped
+    expose:
+      - "9094"
+    environment:
+      DISCORD_WEBHOOK: "${DISCORD_WEBHOOK}"
+
 volumes:
   prometheus_data:
   grafana_data:
