@@ -64,6 +64,7 @@ services:
     volumes:
       - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
       - alertmanager_data:/alertmanager
+      - ./secrets/discord_webhook_url:/etc/alertmanager/secrets/discord_webhook_url:ro
     command:
       - "--config.file=/etc/alertmanager/alertmanager.yml"
       - "--storage.path=/alertmanager"
