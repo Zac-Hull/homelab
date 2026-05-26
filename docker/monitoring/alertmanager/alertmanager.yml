@@ -20,5 +20,5 @@ receivers:
           **Description:** {{ .Annotations.description }}
           **Instance:** {{ .Labels.instance }}
           **Job:** {{ .Labels.job }}
-          **Severity:** {{ .Labeles.severity }}
+          **Severity:** {{ .Labels.severity }}
           {{ end }}
