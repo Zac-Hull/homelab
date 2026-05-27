@@ -35,7 +35,6 @@ scrape_configs:
           role: "docker"
           exporter: "cadvisor"
 
-
   - job_name: "blackbox-http"
     metrics_path: /probe
     params:
@@ -50,3 +49,13 @@ scrape_configs:
         target_label: instance
       - target_label: __address__
         replacement: blackbox-exporter:9115
+
+  - job_name: "alertmanager"
+    static_configs:
+      - targets: ["alertmanager:9093"]
+        labels:
+          environment: "homelab"
+          site: "home"
+          host: "monitor01"
+          role: "alerting"
+          exporter: "alertmanager"

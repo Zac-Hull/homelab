@@ -20,3 +20,13 @@ groups:
         annotations:
           summary: "Blackbox probe failed."
           description: "Blackbox probe for {{ $labels.instance }} has failed for more than 2 minutes."
+
+      - alert: AlertmanagerNotificationFailures
+        expr: increase(alertmanger_notifications_failed_total[10m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          category: alerting
+        annotations:
+          summary: "Alertmanager notifications failure."
+          description: "Alertmanager failed to send one or more notifications in the last 10 minutes."
