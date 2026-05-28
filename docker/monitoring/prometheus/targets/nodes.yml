@@ -6,3 +6,12 @@
     host: "monitor01"
     role: "monitoring"
     exporter: "node"
+
+- targets:
+    - "{{ $DOC01-IP-ADDR }}:9100"
+  labels:
+    environment: "homelab"
+    site: "home"
+    host: "documentation01"
+    role: "documentation"
+    exporter: "node"
