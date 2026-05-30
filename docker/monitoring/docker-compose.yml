@@ -72,7 +72,19 @@ services:
       - "--config.file=/etc/alertmanager/alertmanager.yml"
       - "--storage.path=/alertmanager"
 
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki_data:/loki
+    command:
+      - "-config.file=/etc/loki/loki.yml"
 volumes:
   prometheus_data:
   grafana_data:
   alertmanager_data:
+  loki_data:
