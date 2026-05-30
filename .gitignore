@@ -9,3 +9,6 @@
 *.pem
 id_*
 .DS_Store
+secrets/
+.secret
+docker/monitoring/prometheus/targets/nodes.yml
