@@ -1,0 +1,20 @@
+discovery.docker "monitor01" {
+  host = "unix:///var/run/docker.sock"
+}
+
+loki.source.docker "monitor01" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.docker.monitor01.targets
+  forward_to = [loki.write.local.receiver]
+
+  labels = {
+    job  = "docker"
+    host = "monitor01"
+  }
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
