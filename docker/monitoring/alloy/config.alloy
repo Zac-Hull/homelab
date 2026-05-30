@@ -8,8 +8,8 @@ loki.source.docker "monitor01" {
   forward_to = [loki.write.local.receiver]
 
   labels = {
-    job  = "docker"
-    host = "monitor01"
+    job  = "docker",
+    host = "monitor01",
   }
 }
 
