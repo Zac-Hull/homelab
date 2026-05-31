@@ -1,3 +1,6 @@
+# Copy this file to nodes.yml and replace placeholder values
+# with real runtime targets. Do not commit nodes.yml.
+
 - targets:
     - "node-exporter:9100"
   labels:
@@ -8,7 +11,7 @@
     exporter: "node"
 
 - targets:
-    - "{{ $DOC01-IP-ADDR }}:9100"
+    - "<NODE_IP>:9100"
   labels:
     environment: "homelab"
     site: "home"

@@ -1,5 +1,8 @@
+# Copy this file to blackbox-http.yml and replace placeholder values
+# with real runtime targets. Do not commit blackbox-http.yml.
+
 - targets:
-    - "https://zachull.com"
+    - "https://example.com"
   labels:
     environment: "production"
     site: "public"

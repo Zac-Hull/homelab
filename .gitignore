@@ -1,3 +1,4 @@
+# Local-only environment and secret files 
 .env
 *.env
 **/.env
@@ -5,10 +6,15 @@
 **/config/
 **/cache/
 **/secrets/
+secrets/
+.secret
 *.key
 *.pem
 id_*
+
+# macOS noise
 .DS_Store
-secrets/
-.secret
-docker/monitoring/prometheus/targets/nodes.yml
+
+# Local-only Prometheus target inventories
+docker/monitoring/prometheus/targets/*.yml
+!docker/monitoring/prometheus/targets/*.example.yml
