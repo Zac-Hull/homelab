@@ -70,12 +70,7 @@ scrape_configs:
           role: "logging"
           component: "loki"
 
-  - job_name: "alloy"
-    static_configs:
-      - targets: ["alloy:12345"]
-        labels:
-          environment: "homelab"
-          site: "home"
-          host: "monitor01"
-          role: "log-collector"
-          component: "alloy"
+  - job_name: "alloy" 
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/targets/alloy.yml

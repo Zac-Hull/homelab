@@ -1,0 +1,20 @@
+# Copy this file to alloy.yml and replace the placeholder values
+# for real runtime targets. Do not commit alloy.yml.
+
+- targets:
+    - "alloy:12345"
+  labels:
+    environment: "homelab"
+    site: "home"
+    host: "monitor01"
+    role: "log-collector"
+    component: "alloy"
+
+- targets:
+    - "<NODE_IP>:12345"
+  labels:
+    environment: "homelab"
+    site: "home"
+    host: "documentation01"
+    role: "log-collector"
+    component: "alloy"
