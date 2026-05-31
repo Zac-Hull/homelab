@@ -40,3 +40,23 @@ groups:
         annotations:
           summary: "Host disk usage is high."
           description: "{{ $labels.host }} disk usage is above 80% on mount {{ $labels.mountpoint }}."
+
+      - alert: LokiDown
+        expr: up{job="loki"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          category: logging
+        annotations:
+          summary: "Loki is down."
+          description: "Prometheus cannot scrape Loki on {{ $labels.instance }}"
+
+      - alert: AlloyDown
+        expr: up{job="alloy"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          category: logging
+        annotations:
+          summary: "Alloy is down."
+          description: "Prometheus cannot scrape Alloy on {{ $labels.instance }}"

@@ -59,3 +59,23 @@ scrape_configs:
           host: "monitor01"
           role: "alerting"
           exporter: "alertmanager"
+
+  - job_name: "loki"
+    static_configs:
+      - targets: ["loki:3100"]
+        labels:
+          environment: "homelab"
+          site: "home"
+          host: "monitor01"
+          role: "logging"
+          component: "loki"
+
+  - job_name: "alloy"
+    static_configs:
+      - targets: ["alloy:12345"]
+        labels:
+          environment: "homelab"
+          site: "home"
+          host: "monitor01"
+          role: "log-collector"
+          component: "alloy"
