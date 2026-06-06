@@ -70,3 +70,13 @@ groups:
         annotations:
           summary: "SSL certificate expiring soon."
           description: "{{ $labels.instance }} certificate expires in less than 21 days."
+
+      - alert: SSLCertExpiringCritical
+        expr: (probe_ssl_earliest_cert_expiry{job="blackbox-http", probe_type="https"} - time()) / 86400 < 7
+        for: 1h
+        labels:
+          severity: critical
+          category: certificates
+        annotations:
+          summary: "SSL certificate expiration is critical."
+          description: "{{ $labels.instance }} certificate expires in less than 7 days."
