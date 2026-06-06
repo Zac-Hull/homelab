@@ -269,6 +269,15 @@ Recommended:
 
 ---
 
+## SSL Certificate Monitoring
+- Requires `HTTPS` target in `blackbox-http.yml`
+- Requires `probe_type="https"` label
+- Uses `probe_ssl_earliest_cert_expiry`
+- Warning threshold: < 21 days
+- Critical threshold: < 7 days
+
+---
+
 ## Troubleshooting
 ### Probe Shows `DOWN`
 
