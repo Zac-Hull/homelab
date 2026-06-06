@@ -60,3 +60,13 @@ groups:
         annotations:
           summary: "Alloy is down."
           description: "Prometheus cannot scrape Alloy on {{ $labels.instance }}"
+
+      - alert: SSLCertExpiringSoon
+        expr: (probe_ssl_earliest_cert_expiry{job="blackbox-http", probe_type="https"} - time()) / 86400 < 21
+        for: 1h
+        labels:
+          severity: warning
+          category: certificate
+        annotations:
+          summary: "SSL certificate expiring soon."
+          description: "{{ $labels.instance }} certificate expires in less than 21 days."
