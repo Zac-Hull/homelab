@@ -316,27 +316,27 @@ Verify:
 ## Standard Onboarding Checklist
 ### Infrastructure Information
 
-- [ ]Hostname documented
-- [ ]Service identified
-- [ ]VLAN identified
-- [ ]Logging method selected
+- [ ] Hostname documented
+- [ ] Service identified
+- [ ] VLAN identified
+- [ ] Logging method selected
 
 ### Alloy Configuration
 
-- [ ]Required mounts added
-- [ ]Discovery block configured
-- [ ]Labels standardized
-- [ ]Loki forwarding configured
+- [ ] Required mounts added
+- [ ] Discovery block configured
+- [ ] Labels standardized
+- [ ] Loki forwarding configured
 
 ### Validation
 
-- [ ]Alloy restarted
-- [ ]Alloy logs checked
-- [ ]Loki health verified
-- [ ]Grafana datasource working
-- [ ]Logs visible in Grafana
-- [ ]Labels validated
-- [ ]Queries tested
+- [ ] Alloy restarted
+- [ ] Alloy logs checked
+- [ ] Loki health verified
+- [ ] Grafana datasource working
+- [ ] Logs visible in Grafana
+- [ ] Labels validated
+- [ ] Queries tested
 
 ---
 
