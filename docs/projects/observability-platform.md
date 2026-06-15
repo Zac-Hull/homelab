@@ -22,6 +22,7 @@ The platform currently focuses on Prometheus-based metrics collection, Grafana v
 
 ## Goals
 ### Operational Goals
+
 - Centralize infrastructure visibility
 - Detect service failures earlier
 - Reduce manual checking during troubleshooting
@@ -67,17 +68,17 @@ Prometheus is responsible for scraping metrics and health targets. Grafana is re
 
 ## Current Stack
 
-| Component | Purpose | Status |
-|---|---|---|
-| Prometheus | Metrics collection and storage | Active |
-| Grafana | Visualization and dashboards | Active |
-| Node Exporter | Linux host metrics | Expanding |
-| Blackbox Exporter | HTTP, DNS, TCP, and endpoint probing | Expanding |
-| Alertmanager | Alert routing and notifications | Expanding |
-| cAdvisor | Container metrics | Planned |
-| Loki | Log aggregation | Planned |
-| Promtail | Log shipping into Loki | Planned |
-| Uptime Kuma | Family-friendly service availability monitoring | Backlog |
+| Component         | Purpose                                         | Status    |
+| ----------------- | ----------------------------------------------- | --------- |
+| Prometheus        | Metrics collection and storage                  | Active    |
+| Grafana           | Visualization and dashboards                    | Active    |
+| Node Exporter     | Linux host metrics                              | Expanding |
+| Blackbox Exporter | HTTP, DNS, TCP, and endpoint probing            | Expanding |
+| Alertmanager      | Alert routing and notifications                 | Expanding |
+| cAdvisor          | Container metrics                               | Planned   |
+| Loki              | Log aggregation                                 | Expanding |
+| Promtail          | Log shipping into Loki                          | Expanding |
+| Uptime Kuma       | Family-friendly service availability monitoring | Backlog   |
 
 ## Design Choices
 
@@ -97,15 +98,15 @@ Alternatives such as **VictoriaMetrics** and **Grafana Mimir** may be evaluated 
 
 **Blackbox Exporter** provides endpoint probing for HTTP, DNS, TCP, TLS, and availability checks. This matters because a host can be online while the actual service path is broken. Blackbox checks help validate the user-facing path rather than only the server state.
 
-Uptime Kuma may still be added later as a simpler human-friendly status view, but it is not the core monitoring system. Blackbox Exporter fits better into the Prometheus metrics pipeline.
+**Uptime Kuma** may still be added later as a simpler human-friendly status view, but it is not the core monitoring system. Blackbox Exporter fits better into the Prometheus metrics pipeline.
 
 ### Container Metrics, Logs, and Alerts
 
 **cAdvisor** is planned for container-level metrics so Docker workloads can be monitored below the host level. This should help identify which containers are consuming resources or restarting unexpectedly.
 
-**Loki and Promtail** are planned for centralized log aggregation. Metrics can show that something is wrong, while logs often explain why. Loki is preferred over heavier logging stacks like Elastic Stack or OpenSearch for now because it integrates well with Grafana and is a better fit for the current lab scale.
+**Loki and Alloy** provide centralized log aggregation. Metrics can show that something is wrong, while logs often explain why. Loki is preferred over heavier logging stacks like Elastic Stack or OpenSearch for now because it integrates well with Grafana and is a better fit for the current lab scale. **Promtail** was considered, but was rejected from this project because of its EOL status as of March 2, 2026.
 
-**Alertmanager** is being introduced after the initial metrics and dashboards were stable enough to avoid noisy alerts.
+**Alertmanager** was brought into the platform after the initial metrics and dashboards were stable enough to avoid noisy alerts. It is currently being tested and has passed the initial round of testing with Discord webhooks. Future improvements include email and push alerts.
 
 ### Why Not SaaS or All-in-One Monitoring?
 
@@ -349,6 +350,7 @@ Key reliability concepts:
 - Initial dashboards created or under active development
 - Basic monitoring project documentation created
 - Troubleshooting notes captured for endpoint probing behavior
+- Loki and Alloy integrated for centralized logging
 - Alertmanager integrated for initial alert routing and Discord notification testing
 
 ### In Progress
@@ -358,15 +360,14 @@ Key reliability concepts:
 - Adding repeatable documentation for future monitoring targets
 - Validating which services should be monitored by metrics, probes, or both
 - Expand Alertmanager routing and notification coverage
+- Create service-specific runbooks
 
 ### Planned
 - Add cAdvisor for Docker container metrics
-- Add Loki and Promtail for centralized logging
 - Add Uptime Kuma or similar status monitoring
 - Add NAS and network device telemetry
 - Add DNS service monitoring
 - Add UPS/environmental monitoring if supported
-- Create service-specific runbooks
 
 ---
 
@@ -473,8 +474,6 @@ Planned monitoring expansion:
 
 Planned migration toward centralized logging using:
 
-- Loki
-- Promtail
 - Grafana log exploration
 
 Goals:
@@ -488,7 +487,6 @@ Goals:
 
 Planned integrations:
 
-- Discord notifications
 - Email notifications
 - Mobile push notifications
 
@@ -498,10 +496,7 @@ Alerting should be added carefully. The goal is useful signal, not noise. My RTL
 
 Planned documentation:
 
-- Prometheus setup guide
-- Grafana setup guide
 - Blackbox Exporter setup guide
-- Node Exporter onboarding guide
 - Monitoring target template
 - Dashboard design notes
 - Alert rule documentation
