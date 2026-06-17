@@ -20,7 +20,7 @@ Draw.io is a self-hosted diagramming service used to create and maintain homelab
 ## Access
 
 ```
-http://documentation01-IP:8081
+http://documentation01-IP:$(DRAWIO_HOST_PORT)
 ```
 
 ## Deployment
@@ -34,7 +34,7 @@ docker compose up -d
 
 ```
 docker compose ps
-curl -I http://localhost:8081
+curl -I http://localhost:$(DRAWIO_HOST_PORT)
 ```
 
 Expected result:
