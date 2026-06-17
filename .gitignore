@@ -11,6 +11,7 @@ secrets/
 *.key
 *.pem
 id_*
+!*.example
 
 # macOS noise
 .DS_Store
@@ -18,3 +19,7 @@ id_*
 # Local-only Prometheus target inventories
 docker/monitoring/prometheus/targets/*.yml
 !docker/monitoring/prometheus/targets/*.example.yml
+
+# Local-only Draw.io compose files
+docker/drawio/*.yml
+!docker/drawio/*.example.yml
