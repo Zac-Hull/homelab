@@ -38,7 +38,7 @@ The current implementation primarily uses:
 | Blackbox Exporter | Active probing |
 | Prometheus | Metrics scraping |
 | Grafana | Visualization and alerting |
-| Future Alertmanager | Notifications |
+| Alertmanager | Notifications |
 
 ---
 
@@ -108,7 +108,7 @@ Record:
 |---|---|
 | Service Name | `grafana` |
 | Hostname | `monitor01` |
-| Endpoint | `https://<FQDM>` |
+| Endpoint | `https://<FQDN>` |
 | Protocol | HTTPS |
 | VLAN | `20` |
 | External/Internal | Internal |
