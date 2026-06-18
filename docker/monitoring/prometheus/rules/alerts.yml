@@ -3,26 +3,36 @@ groups:
     rules:
       - alert: PrometheusTargetDown
         expr: up == 0
-        for: 2m
+        for: 5m
         labels:
           severity: warning
           category: availability
         annotations:
           summary: "Prometheus target is down."
-          description: "Target {{ $labels.instance }} for job {{ $labels.job }} has been down for more than 2 minutes."
+          description: "Target {{ $labels.instance }} for job {{ $labels.job }} has been down for more than 5 minutes."
 
       - alert: BlackboxProbeFailed
-        expr: probe_success == 0
-        for: 2m
+        expr: probe_success{probe_type="http"} == 0
+        for: 5m
         labels:
           severity: warning
           category: availability
         annotations:
-          summary: "Blackbox probe failed."
-          description: "Blackbox probe for {{ $labels.instance }} has failed for more than 2 minutes."
+          summary: "HTTP probe failed for {{ $labels.service }}."
+          description: "{{ $labels.service }} on {{ $labels.host }} has failed HTTP probing for more than 5 minutes. Target: {{ $labels.instance }}"
+
+      - alert: BlackboxHTTPUnexpectedStatus
+        expr: probe_http_status_code{probe_type="http"} < 200 or probe_http_status_code{probe_type="http"} >= 400
+        for: 5m
+        labels:
+          severity: warning
+          category: availability
+        annotations:
+          summary: "Unexpected HTTP status for {{ $labels.service }}."
+          description: "{{ $labels.service }} on {{ $labels.host }} is returning HTTP {{ $value }}. Target: {{ $labels.instance }}"
 
       - alert: AlertmanagerNotificationFailures
-        expr: increase(alertmanger_notifications_failed_total[10m]) > 0
+        expr: increase(alertmanager_notifications_failed_total[10m]) > 0
         for: 1m
         labels:
           severity: warning
@@ -31,52 +41,108 @@ groups:
           summary: "Alertmanager notifications failure."
           description: "Alertmanager failed to send one or more notifications in the last 10 minutes."
 
-      - alert: HostDiskUsageHigh
-        expr: 100 - ((node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs"} * 100) / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs"}) > 80
-        for: 5m
+  - name: homelab-node-health
+    rules:
+      - alert: HostRootDiskUsageHigh
+        expr: |
+          100 * (1 - (
+            node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay|squashfs|fuse.*"}
+            /
+            node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay|squashfs|fuse.*"}
+          )) > 85
+        for: 10m
         labels:
           severity: warning
           category: capacity
         annotations:
-          summary: "Host disk usage is high."
-          description: "{{ $labels.host }} disk usage is above 80% on mount {{ $labels.mountpoint }}."
+          summary: "Root disk usage is high on {{ $labels.host }}."
+          description: "Root filesystem usage on {{ $labels.host }} is above 85%. Current value: {{ printf \"%.1f\" $value }}%."
 
+      - alert: HostRootDiskUsageCritical
+        expr: |
+          100 * (1 - (
+            node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay|squashfs|fuse.*"}
+            /
+            node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay|squashfs|fuse.*"}
+          )) > 95
+        for: 5m
+        labels:
+          severity: critical
+          category: capacity
+        annotations:
+          summary: "Root disk usage is critical on {{ $labels.host }}."
+          description: "Root filesystem usage on {{ $labels.host }} is above 95%. Current value: {{ printf \"%.1f\" $value }}%."
+
+      - alert: HostMemoryUsageHigh
+        expr: |
+          100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 90
+        for: 10m
+        labels:
+          severity: warning
+          category: capacity
+        annotations:
+          summary: "Memory usage is high on {{ $labels.host }}."
+          description: "Memory usage on {{ $labels.host }} is above 90%. Current value: {{ printf \"%.1f\" $value }}%."
+
+      - alert: HostCPUUsageHigh
+        expr: |
+          100 - (avg by (host) (rate(node_cpu_seconds_total{job=~".*node.*", mode="idle"}[5m])) * 100) > 90
+        for: 15m
+        labels:
+          severity: warning
+          category: capacity
+        annotations:
+          summary: "CPU usage is high on {{ $labels.host }}."
+          description: "CPU usage on {{ $labels.host }} has been above 90% for 15 minutes. Current value: {{ printf \"%.1f\" $value }}%."
+
+  - name: homelab-logging
+    rules:
       - alert: LokiDown
         expr: up{job="loki"} == 0
-        for: 2m
+        for: 5m
         labels:
           severity: warning
           category: logging
         annotations:
           summary: "Loki is down."
-          description: "Prometheus cannot scrape Loki on {{ $labels.instance }}"
+          description: "Prometheus cannot scrape Loki on {{ $labels.instance }}."
 
       - alert: AlloyDown
         expr: up{job="alloy"} == 0
-        for: 2m
+        for: 5m
         labels:
           severity: warning
           category: logging
         annotations:
           summary: "Alloy is down."
-          description: "Prometheus cannot scrape Alloy on {{ $labels.instance }}"
+          description: "Prometheus cannot scrape Alloy on {{ $labels.instance }}."
 
+  - name: homelab-certificates
+    rules:
       - alert: SSLCertExpiringSoon
-        expr: (probe_ssl_earliest_cert_expiry{job="blackbox-http", probe_type="https"} - time()) / 86400 < 21
+        expr: |
+          (
+            (probe_ssl_earliest_cert_expiry{job="blackbox-http", probe_type="https"} - time()) / 86400 < 21
+          )
+          and
+          (
+            (probe_ssl_earliest_cert_expiry{job="blackbox-http", probe_type="https"} - time()) / 86400 >= 7
+          )
         for: 1h
         labels:
           severity: warning
-          category: certificate
+          category: certificates
         annotations:
           summary: "SSL certificate expiring soon."
-          description: "{{ $labels.instance }} certificate expires in less than 21 days."
+          description: "{{ $labels.instance }} certificate expires in less than 21 days. Days remaining: {{ printf \"%.1f\" $value }}."
 
       - alert: SSLCertExpiringCritical
-        expr: (probe_ssl_earliest_cert_expiry{job="blackbox-http", probe_type="https"} - time()) / 86400 < 7
+        expr: |
+          (probe_ssl_earliest_cert_expiry{job="blackbox-http", probe_type="https"} - time()) / 86400 < 7
         for: 1h
         labels:
           severity: critical
           category: certificates
         annotations:
           summary: "SSL certificate expiration is critical."
-          description: "{{ $labels.instance }} certificate expires in less than 7 days."
+          description: "{{ $labels.instance }} certificate expires in less than 7 days. Days remaining: {{ printf \"%.1f\" $value }}."
