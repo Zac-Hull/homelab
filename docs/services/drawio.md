@@ -43,18 +43,49 @@ Expected result:
 - HTTP response is returned
 - Draw.io UI loads in browser
 
+## Monitoring
+
+Draw.io is monitored through Blackbox Exporter using an HTTP probe from the monitoring stack.
+
+The probe validates that the Draw.io web interface is reachable from the internal network and returns a successful HTTP response.
+
+Primary metrics:
+
+- `probe_success`
+- `probe_http_status_code`
+- `probe_duration_seconds`
+
+Alerting is handled through the central Prometheus and Alertmanager stack.
+
+## Diagram Storage Workflow
+
+Draw.io is treated as a stateless web application. Diagram files should be saved outside the container.
+
+Public-safe diagrams may be stored in the homelab repository after sanitization.
+
+Private diagrams containing internal IP addresses, VLAN details, hostnames, firewall rules, VPN topology, or sensitive architecture details should stay in the private Obsidian vault.
+
+Recommended locations:
+
+```text
+Public-safe:
+docs/architecture/diagrams/
+
+Private/internal:
+vault-of-holding/30_Projects/Homelab/Diagrams/
+```
+
 ## Storage Model
 
 Draw.io is treated as a stateless application. Diagram files should be saved outside the container.
 
-Recommended locations:
+Storage locations:
 
 - Public-safe diagrams: `docs/architecture/diagrams/`
-- Private/internal diagrams: Obsidian vault only
+- Private/internal diagrams: Obsidian vault
 
 ## Security Notes
 
-- Do not expose publicly yet.
 - Keep LAN-only until reverse proxy and identity management are in place.
 - Do not commit diagrams containing sensitive IPs, hostnames, VLAN details, firewall rules, or VPN topology.
 
@@ -62,6 +93,4 @@ Recommended locations:
 
 - Add reverse proxy route.
 - Add internal DNS name such as `drawio.home.arpa`.
-- Add service monitoring through Blackbox Exporter.
-- Add dashboard panel in Grafana.
 - Document diagram publishing workflow.
