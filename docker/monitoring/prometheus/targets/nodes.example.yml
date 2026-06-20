@@ -15,6 +15,15 @@
   labels:
     environment: "homelab"
     site: "home"
-    host: "documentation01"
+    host: "doc01"
     role: "documentation"
+    exporter: "node"
+
+- targets:
+    - "<NODE_IP>:9100"
+  labels:
+    environment: "homelab"
+    site: "home"
+    host: "mbd01"
+    role: "media backend"
     exporter: "node"
