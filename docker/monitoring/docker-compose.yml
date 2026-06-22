@@ -88,8 +88,8 @@ services:
     image: grafana/alloy:latest
     container_name: alloy
     restart: unless-stopped
-    expose:
-      - "12345"
+    ports:
+      - "12345:12345"
     volumes:
       - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
