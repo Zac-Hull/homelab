@@ -19,6 +19,8 @@ This onboarding workflow standardizes:
 
 The goal is to make future log onboarding repeatable, predictable, and operationally consistent.
 
+Unless a step explicitly says otherwise, assume commands are run on the target node being monitored.
+
 ---
 
 ## Objectives
@@ -68,225 +70,250 @@ Current and planned supported sources:
 
 ---
 
-## Standard Onboarding Workflow
+## Standard Remote Docker Log Onboarding Workflow
 
-Every new logging target should follow the same workflow.
+This workflow applies when onboarding Docker container logs from a remote Linux node.
 
-### Step 1 — Identify the Log Source
+Example target node:
 
-Determine:
-
-| Item | Example |
-|---|---|
-| Hostname | `mediabe01` |
-| Service | `jellyfin` |
-| Log Type | Docker logs |
-| Log Path | `/var/log/*.log` |
-| VLAN | `20` |
-| Collection Method | Docker discovery |
-
-#### Log Collection Methods
-**Docker Discovery**
-
-Recommended for:
-
-- Docker containers
-- Compose-based services
-- containerized infrastructure
-
-**File Discovery**
-
-Recommended for:
-
-- Linux system logs
-- application logs
-- services writing directly to files
-
-
-### Step 2 — Confirm Required Mounts
-#### Docker Log Collection
-
-Verify Docker socket mounted:
-```yaml
-volumes:
-  - /var/run/docker.sock:/var/run/docker.sock
+```text
+mbd01
 ```
 
-Validate:
+Central logging destination:
+
+```text
+mon01 → Loki :3100
+```
+
+### Stage 1 — Identify the Target Node
+
+Run from: **admin workstation or documentation notes**
+
+Record the following before making changes:
+
+| Item               | Example                                    |
+| ------------------ | ------------------------------------------ |
+| Hostname           | `mbd01`                                    |
+| Role               | `media-backend`                            |
+| Site               | `home`                                     |
+| Environment        | `homelab`                                  |
+| Log source type    | Docker containers                          |
+| Loki endpoint      | `http://<LOKI_HOST>:3100/loki/api/v1/push` |
+| Alloy metrics port | `12345/tcp`                                |
+
+### Stage 2 — Install Alloy on the Target Node
+
+Run from: **target node**
+
+Create the Alloy deployment directory:
+
+```bash
+sudo mkdir -p /opt/docker/alloy
+sudo chown -R administrator:administrator /opt/docker/alloy
+cd /opt/docker/alloy
+```
+
+Create:
+
+```text
+/opt/docker/alloy/docker-compose.yml
+/opt/docker/alloy/config.alloy
+```
+
+Risk: **low risk**. Creating the Alloy directory does not modify existing services.
+
+### Stage 3 — Configure Docker Log Collection
+
+Run from: **target node**
+
+Alloy must be able to read Docker container metadata and logs through the Docker socket.
+
+The Compose file should include:
+
+```yaml
+volumes:
+  - ./config.alloy:/etc/alloy/config.alloy:ro
+  - /var/run/docker.sock:/var/run/docker.sock:ro
+```
+
+Validate the socket exists on the target node:
+
 ```bash
 ls -la /var/run/docker.sock
 ```
 
-#### Linux System Log Collection
+### Stage 4 — Configure Alloy to Push to Loki
 
-Verify log directory mounted:
-```yaml
-volumes:
-  - /var/log:/var/log:ro
-```
+Run from: **target node**
 
-Validate:
-```bash
-ls -la /var/log
-```
+Example `config.alloy`:
 
-#### Container Log Files
-
-For custom application logs:
-```yaml
-volumes:
-  - /path/to/logs:/logs:ro
-```
-
-### Step 3 — Configure Alloy Pipeline
-
-Primary config:
-
-`config.alloy`
-
-#### Docker Container Onboarding
-**Docker Discovery Block**
 ```hcl
-discovery.docker "containers" {
+discovery.docker "local" {
   host = "unix:///var/run/docker.sock"
 }
-```
 
-**Docker Log Source**
-```hcl
-loki.source.docker "containers" {
+loki.source.docker "local" {
   host       = "unix:///var/run/docker.sock"
-  targets    = discovery.docker.containers.targets
-  forward_to = [loki.write.default.receiver]
+  targets    = discovery.docker.local.targets
+  forward_to = [loki.write.<MONITORING_NODE_HOST>.receiver]
+
+  labels = {
+    job  = "docker",
+    host = "<TARGET_HOSTNAME>",
+  }
+}
+
+loki.write "<MONITORING_NODE_HOST>" {
+  endpoint {
+    url = "http://<LOKI_HOST>:3100/loki/api/v1/push"
+  }
 }
 ```
 
-#### Linux System Log Onboarding
-**File Discovery Block**
-```hcl
-local.file_match "system_logs" {
-  path_targets = [
-    {
-      __path__ = "/var/log/*.log",
-      job      = "system"
-    }
-  ]
-}
+Replace:
+
+```text
+<MONITORING_NODE_HOST>
+<TARGET_HOSTNAME>
+<LOKI_HOST>
 ```
 
-**File Log Source**
-```hcl
-loki.source.file "system_logs" {
-  targets    = local.file_match.system_logs.targets
-  forward_to = [loki.write.default.receiver]
-}
-```
+with the real runtime values on the target node.
 
-**Application Log Onboarding**
+### Stage 5 — Start Alloy
 
-Example custom application logs:
-```hcl
-local.file_match "app_logs" {
-  path_targets = [
-    {
-      __path__ = "/logs/*.log",
-      job      = "application"
-      service  = "custom-app"
-    }
-  ]
-}
-```
+Run from: **target node**
 
-### Step 4 — Apply Label Standards
-
-Consistent labels are critical for Grafana queries.
-
-#### Recommended Labels
-| Label | Example |
-|---|---|
-| job | `docker` |
-| hostname | `monitor01` |
-| service | `grafana` |
-| environment | `homelab` |
-| vlan | `20` |
-
-**Example Labels**
-```hcl
-{
-  __path__   = "/var/log/*.log",
-  job        = "system",
-  hostname   = "monitor01",
-  environment = "homelab"
-}
-```
-
-### Step 5 — Restart Alloy
-
-After configuration changes:
 ```bash
-docker compose restart alloy
+cd /opt/docker/alloy
+docker compose up -d
 ```
 
-Validate:
+Risk: **medium risk**. This starts or recreates the Alloy container. It should not affect existing application containers, but it does modify live log collection behavior.
+
+Validate Alloy:
+
 ```bash
 docker compose ps
+curl http://localhost:12345/-/ready
 ```
 
-Step 6 — Validate Alloy Logs
+Expected result:
 
-Check Alloy logs:
+```text
+Alloy is ready.
+```
+
+### Stage 6 — Confirm the Target Node Can Reach Loki
+
+Run from: **target node**
+
 ```bash
-docker compose logs -f alloy
+curl http://<LOKI_HOST>:3100/ready
 ```
 
-Look for:
+Expected result:
 
-- discovery errors
-- permission errors
-- Loki connection failures
-- config parsing issues
+```text
+ready
+```
 
-### Step 7 — Validate Loki Health
+If this fails, check VLAN rules, firewall rules, Loki port exposure, and routing between the target node and `mon01`.
+
+### Stage 7 — Confirm Loki Received Logs
+
+Run from: **monitor01**
+
 ```bash
-curl http://<loki-host>:3100/ready
+curl -s http://localhost:3100/loki/api/v1/label/host/values | python3 -m json.tool
 ```
 
-Expected:
+Expected result includes the target host:
 
-`ready`
+```text
+mbd01
+```
 
-### Step 8 — Validate in Grafana
+If the host does not appear, generate a long-running test container on the target node and check again.
 
-Open Grafana Explore.
+### Stage 8 — Validate in Grafana
 
-Select:
+Run from: **Grafana UI**
 
-- Loki datasource
+Open:
 
-Start with broad query:
+```text
+Explore → Loki
+```
+
+Query:
+
 ```logql
-{job=~".+"}
+{host="<TARGET_HOSTNAME>"}
 ```
 
-Then narrow:
+Example:
+
 ```logql
-{job="system"}
+{host="mbd01"}
 ```
+
+Then test error filtering:
+
 ```logql
-{service="grafana"}
-```
-```logql
-{container_name="alloy"}
+{host="<TARGET_HOSTNAME>"} |~ "(?i)error|failed|denied|panic|fatal|exception"
 ```
 
-### Step 9 — Confirm Label Visibility
+### Stage 9 — Add Alloy to Prometheus Monitoring
 
-Verify:
+Run from: **documentation01**
 
-- labels appear correctly
-- hostnames consistent
-- service names readable
-- expected streams visible
+Add the target node’s Alloy endpoint to the private runtime target file:
+
+```text
+docker/monitoring/prometheus/targets/alloy.yml
+```
+
+Example:
+
+```yaml
+- targets:
+    - "<TARGET_IP>:12345"
+  labels:
+    environment: "homelab"
+    site: "home"
+    host: "<TARGET_HOSTNAME>"
+    role: "log-collector"
+    component: "alloy"
+```
+
+Deploy the monitoring config to `mon01` using the monitoring deployment script.
+
+### Stage 10 — Commit Sanitized Documentation
+
+Run from: **doc01**
+
+Commit only public-safe examples and documentation.
+
+Do not commit:
+
+```text
+real target files
+real internal IP inventories
+secrets
+.env files
+webhook URLs
+```
+
+Commit examples such as:
+
+```text
+alloy.example.yml
+config.alloy.example
+alloy-onboarding.md
+```
 
 ---
 
